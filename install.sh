@@ -71,12 +71,8 @@ if ! grep -q "dtoverlay=vc4-kms-v3d" /boot/firmware/config.txt; then
 fi
 
 echo "[8/8] Plymouth boot teması kuruluyor..."
-python3 -c "
-import sys
-sys.path.append('/opt/kioskpi/kiosk')
-import boot_logo
-boot_logo.apply_logo('/opt/kioskpi/kiosk/static/logo.png') # Varsayılan logo gerekebilir
-" || echo "Boot logo şimdilik atlandı."
+mkdir -p /usr/share/plymouth/themes/kioskpi
+cp -r /opt/kioskpi/plymouth/kioskpi/* /usr/share/plymouth/themes/kioskpi/
 plymouth-set-default-theme -R kioskpi || echo "Initramfs güncellenirken uyarı, bu normal olabilir."
 
 echo "=========================================="
