@@ -6,9 +6,12 @@ Conflicts=getty@tty1.service
 [Service]
 Type=simple
 User=kiosk
+PAMName=login
 Environment=WLR_LIBINPUT_NO_DEVICES=1
-Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=XDG_RUNTIME_DIR=/run/user/%U
 Environment=WAYLAND_DISPLAY=wayland-1
+StandardOutput=journal
+StandardError=journal
 ExecStart=/usr/bin/cage -s -- /usr/bin/chromium-browser \
     --enable-features=VaapiVideoDecoder,VaapiVideoEncoder \
     --enable-gpu-rasterization \
