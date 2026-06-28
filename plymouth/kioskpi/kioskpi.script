@@ -1,0 +1,31 @@
+# KioskPi Plymouth Theme Script
+# Basic image display on black background
+
+# Background color
+Window.SetBackgroundTopColor (0, 0, 0);
+Window.SetBackgroundBottomColor (0, 0, 0);
+
+# Load image
+logo_image = Image("logo.png");
+
+# Calculate position (center)
+screen_width = Window.GetWidth();
+screen_height = Window.GetHeight();
+
+logo_width = logo_image.GetWidth();
+logo_height = logo_image.GetHeight();
+
+x = (screen_width - logo_width) / 2;
+y = (screen_height - logo_height) / 2;
+
+# Create sprite
+logo_sprite = Sprite(logo_image);
+logo_sprite.SetX(x);
+logo_sprite.SetY(y);
+
+# Add a simple fade in effect
+fun refresh_callback () {
+    # Could implement fading or spinner here if needed
+}
+
+Plymouth.SetRefreshFunction (refresh_callback);

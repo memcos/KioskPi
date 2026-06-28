@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KioskPi - Yönetim Paneli Girişi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body class="login-page">
+    <div class="background-animation"></div>
+    
+    <div class="login-container glass-card">
+        <div class="logo-area">
+            <h2>KioskPi</h2>
+            <p>Yönetim Paneli</p>
+        </div>
+        
+        {% if error %}
+        <div class="alert error-alert">
+            {{ error }}
+        </div>
+        {% endif %}
+        
+        <form method="POST" action="{{ url_for('login') }}" class="login-form">
+            <div class="form-group">
+                <label for="password">Yönetici Şifresi</label>
+                <input type="password" id="password" name="password" required placeholder="Şifrenizi girin..." autofocus>
+            </div>
+            
+            <button type="submit" class="btn primary-btn">Giriş Yap</button>
+        </form>
+    </div>
+</body>
+</html>

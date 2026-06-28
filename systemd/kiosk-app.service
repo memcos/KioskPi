@@ -1,0 +1,16 @@
+[Unit]
+Description=KioskPi Backend Application
+After=network.target kiosk-display.service
+
+[Service]
+Type=simple
+User=root
+# Root required for evdev input monitoring without adding user to input group manually, 
+# and also for plymouth boot logo changes.
+WorkingDirectory=/opt/kioskpi
+ExecStart=/usr/bin/python3 /opt/kioskpi/kiosk/app.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

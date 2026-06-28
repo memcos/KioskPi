@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KioskPi - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+    <div class="background-animation"></div>
+    
+    <nav class="navbar glass-nav">
+        <div class="nav-brand">KioskPi Yönetim Paneli</div>
+        <div class="nav-actions">
+            <div class="status-indicator">
+                <span class="dot {% if status.browser_connected %}active{% endif %}"></span>
+                <span class="status-text">Tarayıcı {% if status.browser_connected %}Aktif{% else %}Pasif{% endif %}</span>
+            </div>
+            <a href="{{ url_for('logout') }}" class="btn danger-btn-outline btn-sm">Çıkış Yap</a>
+        </div>
+    </nav>
+
+    <main class="dashboard-grid">
+        <!-- URL Settings -->
+        <section class="glass-card config-section">
+            <h3>URL ve Davranış Ayarları</h3>
+            <form id="url-config-form">
+                <div class="form-group">
+                    <label for="primary_url">Birincil URL (Giriş/Uygulama Sayfası)</label>
+                    <input type="url" id="primary_url" name="primary_url" value="{{ config.primary_url }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="secondary_url">İkincil URL (Bekleme/Reklam Sayfası)</label>
+                    <input type="url" id="secondary_url" name="secondary_url" value="{{ config.secondary_url }}">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label for="idle_timeout">Bekleme Süresi (Saniye)</label>
+                        <input type="number" id="idle_timeout" name="idle_timeout" value="{{ config.idle_timeout }}" min="0">
+                        <small>0 yazarsanız otomatik geçiş iptal olur.</small>
+                    </div>
+                    
+                    <div class="form-group half">
+                        <label for="input_field_selector">Barkod Giriş Alanı Seçici</label>
+                        <input type="text" id="input_field_selector" name="input_field_selector" value="{{ config.input_field_selector }}" placeholder="örn: #barcode-input">
+                        <small>Boş bırakılırsa sayfanın kendi odak mantığı kullanılır.</small>
+                    </div>
+                </div>
+
+                <div class="toggle-group">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="auto_submit" name="auto_submit" {% if config.auto_submit %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="toggle-label">Barkod Okunduktan Sonra Otomatik Gönder (Enter)</span>
+                </div>
+                
+                <button type="submit" class="btn primary-btn mt-4">Ayarları Kaydet</button>
+            </form>
+        </section>
+
+        <!-- Device Settings -->
+        <section class="glass-card config-section">
+            <h3>Donanım Ayarları</h3>
+            <div class="form-group">
+                <label>Barkod Okuyucu Cihazı (USB HID)</label>
+                <select id="input_devices" name="input_devices" multiple class="custom-select">
+                    {% for dev in available_devices %}
+                    <option value="{{ dev }}" {% if dev in config.input_devices %}selected{% endif %}>{{ dev }}</option>
+                    {% endfor %}
+                </select>
+                <small>Birden fazla seçebilirsiniz (Ctrl ile). Hiç seçmezseniz sistem tüm giriş cihazlarını dinler.</small>
+                <button type="button" id="save-devices" class="btn primary-btn mt-2">Cihaz Ayarlarını Kaydet</button>
+            </div>
+            
+            <hr>
+            
+            <h3>Boot Logo</h3>
+            <form id="logo-upload-form" class="upload-area mt-2">
+                <p>Yeni bir başlangıç logosu yükleyin (PNG/JPG)</p>
+                <input type="file" id="boot_logo" accept="image/png, image/jpeg" style="display:none">
+                <button type="button" class="btn secondary-btn" onclick="document.getElementById('boot_logo').click()">Logo Seç</button>
+                <span id="file-name" class="ml-2"></span>
+                <button type="submit" class="btn primary-btn mt-2" style="display:none" id="upload-btn">Logoyu Uygula</button>
+            </form>
+        </section>
+
+        <!-- System & Security -->
+        <section class="glass-card config-section">
+            <h3>Sistem Durumu</h3>
+            <div class="status-grid">
+                <div class="status-item">
+                    <span class="status-label">Aktif Ekran</span>
+                    <span class="status-value highlight" id="active-screen">{{ status.current_state }}</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Bağlı Cihazlar</span>
+                    <span class="status-value">{{ status.active_devices|length }}</span>
+                </div>
+            </div>
+            
+            <div class="action-buttons mt-4">
+                <button id="reboot-app" class="btn warning-btn">Uygulamayı Yeniden Başlat</button>
+                <button id="reboot-pi" class="btn danger-btn">Cihazı Yeniden Başlat</button>
+            </div>
+            
+            <hr>
+            
+            <h3>Şifre Değiştir</h3>
+            <form id="password-form">
+                <div class="form-group">
+                    <label for="old_password">Mevcut Şifre</label>
+                    <input type="password" id="old_password" required>
+                </div>
+                <div class="form-group">
+                    <label for="new_password">Yeni Şifre</label>
+                    <input type="password" id="new_password" required>
+                </div>
+                <button type="submit" class="btn secondary-btn">Şifreyi Güncelle</button>
+            </form>
+        </section>
+    </main>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "primary_url": "about:blank",
+  "secondary_url": "about:blank",
+  "idle_timeout": 60,
+  "input_field_selector": "",
+  "admin_port": 8080,
+  "single_process_mode": false,
+  "auto_submit": true,
+  "submit_key": "Enter",
+  "boot_logo_path": "",
+  "input_devices": []
+}

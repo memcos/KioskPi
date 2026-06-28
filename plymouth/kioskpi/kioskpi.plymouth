@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=KioskPi
+Description=Custom Boot Logo for KioskPi
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/kioskpi
+ScriptFile=/usr/share/plymouth/themes/kioskpi/kioskpi.script
