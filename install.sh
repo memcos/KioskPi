@@ -35,10 +35,15 @@ cp -r plymouth /opt/kioskpi/
 chown -R root:root /opt/kioskpi
 chmod -R 755 /opt/kioskpi
 
-echo "[4/7] Geçici admin şifresi oluşturuluyor..."
-RANDOM_PASS=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 8)
-# We use python to hash and set the password
-python3 -c "
+echo "[4/7] Admin şifresi ayarlanıyor..."
+if [ -f /opt/kioskpi/admin_hash.txt ]; then
+    echo "Mevcut admin şifresi bulundu, korundu."
+    RANDOM_PASS="[Önceden belirlediğiniz şifreniz]"
+else
+    echo "Yeni geçici admin şifresi oluşturuluyor..."
+    RANDOM_PASS=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 8)
+    # We use python to hash and set the password
+    python3 -c "
 import bcrypt
 import os
 hashed = bcrypt.hashpw('${RANDOM_PASS}'.encode('utf-8'), bcrypt.gensalt())
@@ -46,7 +51,8 @@ os.makedirs('/opt/kioskpi', exist_ok=True)
 with open('/opt/kioskpi/admin_hash.txt', 'wb') as f:
     f.write(hashed)
 "
-chmod 600 /opt/kioskpi/admin_hash.txt
+    chmod 600 /opt/kioskpi/admin_hash.txt
+fi
 
 echo "[5/7] Systemd servisleri ve Greetd ayarlanıyor..."
 # Chromium Debug/Kiosk başlatıcı
@@ -72,6 +78,7 @@ cp systemd/kiosk-app.service /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable greetd.service
 systemctl enable kiosk-app.service
+systemctl restart kiosk-app.service || true
 
 echo "[6/7] GPU Hızlandırma ayarları (/boot/firmware/config.txt)..."
 # Just to ensure V3D driver is enabled (Debian Trixie standard)
