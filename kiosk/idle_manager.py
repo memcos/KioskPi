@@ -49,10 +49,11 @@ class IdleManager:
             
             idle_timeout = self.config.get('idle_timeout', 60)
             primary_url = self.config.get('primary_url', 'about:blank')
+            enable_secondary = self.config.get('enable_secondary_url', False)
             secondary_url = self.config.get('secondary_url', 'about:blank')
             
-            if idle_timeout <= 0:
-                continue # Disable idle switching if timeout is 0 or less
+            if idle_timeout <= 0 or not enable_secondary:
+                continue # Disable idle switching if timeout is 0 or less, or disabled
                 
             elapsed = time.time() - self.last_interaction
             

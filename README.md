@@ -23,12 +23,13 @@ KioskPi is a highly optimized, Wayland (cage) based kiosk application powered by
 
 ### 🛠️ Installation
 
-Run the installation script with root privileges. It will automatically install all dependencies, configure the `kiosk` user, and set up the `systemd` services.
+Run the installation script with root privileges. The fastest way to install is by running the following one-line command:
 
 ```bash
-chmod +x install.sh
-sudo ./install.sh
+curl -sSL https://raw.githubusercontent.com/memcos/KioskPi/main/setup.sh | sudo bash
 ```
+
+Alternatively, you can manually clone the repository and run `install.sh`.
 
 At the end of the installation, the script will output the device's IP address and a **randomly generated admin password**.
 
@@ -65,12 +66,13 @@ KioskPi, Raspberry Pi 3 ve üstü cihazlar için optimize edilmiş, Wayland (cag
 
 ### 🛠️ Kurulum
 
-Aşağıdaki komutları kullanarak sistemi tam otomatik olarak kurabilirsiniz:
+Aşağıdaki tek satırlık komutu kullanarak sistemi tam otomatik olarak kurabilirsiniz:
 
 ```bash
-chmod +x install.sh
-sudo ./install.sh
+curl -sSL https://raw.githubusercontent.com/memcos/KioskPi/main/setup.sh | sudo bash
 ```
+
+Alternatif olarak, depoyu klonlayıp `install.sh` dosyasını kendiniz de çalıştırabilirsiniz.
 
 Kurulum bittiğinde ekranda beliren IP adresi ve oluşturulan **rastgele şifre** ile yönetim paneline bağlanabilirsiniz.
 

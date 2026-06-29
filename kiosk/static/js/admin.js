@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = new FormData(urlForm);
             const data = {
                 primary_url: formData.get('primary_url'),
+                enable_secondary_url: formData.get('enable_secondary_url') === 'on',
                 secondary_url: formData.get('secondary_url'),
                 idle_timeout: parseInt(formData.get('idle_timeout') || 0, 10),
                 input_field_selector: formData.get('input_field_selector'),

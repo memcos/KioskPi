@@ -63,14 +63,12 @@ class BrowserController:
         return self._send("Page.navigate", {"url": url})
 
     def wait_for_load(self):
-        # We could implement a real listener here, but for simplicity we sleep a bit
-        # Or evaluate a script to check document.readyState
-        time.sleep(1) # Let it load a bit
-        for _ in range(5):
+        # Poll document.readyState frequently instead of waiting 1 full second
+        for _ in range(20):
             res = self._send("Runtime.evaluate", {"expression": "document.readyState"})
             if res and res.get('result', {}).get('result', {}).get('value') == 'complete':
                 break
-            time.sleep(0.5)
+            time.sleep(0.1)
 
     def focus_and_type(self, selector, text, auto_submit=True):
         # We rely on the page's own focus logic if selector is empty

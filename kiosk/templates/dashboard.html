@@ -30,24 +30,31 @@
                     <label for="primary_url">Birincil URL (Giriş/Uygulama Sayfası)</label>
                     <input type="url" id="primary_url" name="primary_url" value="{{ config.primary_url }}" required>
                 </div>
-                
-                <div class="form-group">
-                    <label for="secondary_url">İkincil URL (Bekleme/Reklam Sayfası)</label>
-                    <input type="url" id="secondary_url" name="secondary_url" value="{{ config.secondary_url }}">
+                <div class="toggle-group" style="margin-bottom: 15px;">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="enable_secondary_url" name="enable_secondary_url" {% if config.enable_secondary_url %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="toggle-label">İkincil URL (Bekleme/Reklam Sayfası) Etkinleştir</span>
                 </div>
                 
-                <div class="form-row">
-                    <div class="form-group half">
+                <div id="secondary-settings-container" style="display: {% if config.enable_secondary_url %}block{% else %}none{% endif %}; border-left: 3px solid rgba(255, 255, 255, 0.1); padding-left: 15px; margin-bottom: 15px;">
+                    <div class="form-group">
+                        <label for="secondary_url">İkincil URL (Bekleme/Reklam Sayfası)</label>
+                        <input type="url" id="secondary_url" name="secondary_url" value="{{ config.secondary_url }}">
+                    </div>
+                    
+                    <div class="form-group">
                         <label for="idle_timeout">Bekleme Süresi (Saniye)</label>
                         <input type="number" id="idle_timeout" name="idle_timeout" value="{{ config.idle_timeout }}" min="0">
                         <small>0 yazarsanız otomatik geçiş iptal olur.</small>
                     </div>
-                    
-                    <div class="form-group half">
-                        <label for="input_field_selector">Barkod Giriş Alanı Seçici</label>
-                        <input type="text" id="input_field_selector" name="input_field_selector" value="{{ config.input_field_selector }}" placeholder="örn: #barcode-input">
-                        <small>Boş bırakılırsa sayfanın kendi odak mantığı kullanılır.</small>
-                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="input_field_selector">Barkod Giriş Alanı Seçici</label>
+                    <input type="text" id="input_field_selector" name="input_field_selector" value="{{ config.input_field_selector }}" placeholder="örn: #barcode-input">
+                    <small>Boş bırakılırsa sayfanın kendi odak mantığı kullanılır.</small>
                 </div>
 
                 <div class="toggle-group">
@@ -146,5 +153,16 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggle = document.getElementById('enable_secondary_url');
+            const container = document.getElementById('secondary-settings-container');
+            if(toggle && container) {
+                toggle.addEventListener('change', function() {
+                    container.style.display = this.checked ? 'block' : 'none';
+                });
+            }
+        });
+    </script>
 </body>
 </html>

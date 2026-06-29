@@ -1,5 +1,6 @@
 {
   "primary_url": "about:blank",
+  "enable_secondary_url": false,
   "secondary_url": "about:blank",
   "idle_timeout": 60,
   "input_field_selector": "",
