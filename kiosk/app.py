@@ -142,6 +142,16 @@ def reboot_pi():
     threading.Thread(target=restart).start()
     return jsonify({"success": True})
 
+@app.route('/api/screenshot', methods=['GET'])
+def get_screenshot():
+    if not browser or (not browser.connected and not browser.connect(max_retries=1, retry_delay=0.1)):
+        return jsonify({"success": False, "error": "Tarayıcı bağlı değil"}), 400
+    
+    data = browser.capture_screenshot()
+    if data:
+        return jsonify({"success": True, "image": data})
+    return jsonify({"success": False, "error": "Ekran görüntüsü alınamadı"}), 500
+
 def main():
     global config, browser, monitor, idle, auth
     

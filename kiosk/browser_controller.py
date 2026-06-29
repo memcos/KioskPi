@@ -118,3 +118,9 @@ class BrowserController:
                 "type": "keyUp",
                 "windowsVirtualKeyCode": 13
             })
+
+    def capture_screenshot(self):
+        res = self._send("Page.captureScreenshot", {"format": "png"})
+        if res and 'result' in res and 'data' in res['result']:
+            return res['result']['data']
+        return None

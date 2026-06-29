@@ -181,6 +181,56 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Handle Screenshot Modal
+    const screenshotBtn = document.getElementById('take-screenshot');
+    const modal = document.getElementById('screenshot-modal');
+    const closeModal = document.querySelector('.close-modal');
+    const refreshBtn = document.getElementById('refresh-screenshot');
+    const imgEl = document.getElementById('screenshot-img');
+    const loader = document.getElementById('screenshot-loader');
+
+    const loadScreenshot = async () => {
+        imgEl.style.display = 'none';
+        loader.style.display = 'block';
+        loader.textContent = 'Yükleniyor...';
+        
+        try {
+            const res = await fetch('/api/screenshot');
+            const data = await res.json();
+            
+            if (data.success) {
+                imgEl.src = 'data:image/png;base64,' + data.image;
+                imgEl.style.display = 'block';
+                loader.style.display = 'none';
+            } else {
+                loader.textContent = 'Hata: ' + data.error;
+            }
+        } catch (err) {
+            loader.textContent = 'Bağlantı hatası!';
+        }
+    };
+
+    if (screenshotBtn && modal) {
+        screenshotBtn.addEventListener('click', () => {
+            modal.classList.add('show');
+            loadScreenshot();
+        });
+
+        closeModal.addEventListener('click', () => {
+            modal.classList.remove('show');
+        });
+
+        refreshBtn.addEventListener('click', () => {
+            loadScreenshot();
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('show');
+            }
+        });
+    }
+
     // Polling for Status Updates
     if (document.getElementById('active-screen')) {
         setInterval(async () => {

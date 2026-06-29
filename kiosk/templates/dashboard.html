@@ -107,6 +107,8 @@
                 <button id="reboot-pi" class="btn danger-btn">Cihazı Yeniden Başlat</button>
             </div>
             
+            <button id="take-screenshot" class="btn primary-btn mt-4">Anlık Ekran Görüntüsü Al</button>
+            
             <hr>
             
             <h3>Şifre Değiştir</h3>
@@ -125,6 +127,23 @@
     </main>
 
     <div id="toast" class="toast"></div>
+
+    <!-- Screenshot Modal -->
+    <div id="screenshot-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Anlık Ekran Görüntüsü</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="screenshot-loader">Yükleniyor...</div>
+                <img id="screenshot-img" src="" alt="Ekran Görüntüsü" style="display: none;">
+            </div>
+            <div class="modal-footer" style="text-align: right; margin-top: 15px;">
+                <button id="refresh-screenshot" class="btn secondary-btn">Yenile</button>
+            </div>
+        </div>
+    </div>
 
     <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
 </body>

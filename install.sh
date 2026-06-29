@@ -13,9 +13,9 @@ fi
 # Detect IP address
 IP_ADDR=$(hostname -I | awk '{print $1}')
 
-echo "[1/8] Sistem paketleri güncelleniyor ve kuruluyor..."
+echo "[1/7] Sistem paketleri güncelleniyor ve kuruluyor..."
 apt-get update
-apt-get install -y cage chromium-browser python3-flask python3-bcrypt \
+apt-get install -y greetd labwc chromium-browser python3-flask python3-bcrypt \
     python3-evdev python3-websocket python3-requests \
     plymouth plymouth-themes
 
@@ -27,7 +27,7 @@ else
     usermod -aG input,video,render kiosk
 fi
 
-echo "[3/8] Dizinler oluşturuluyor ve dosyalar kopyalanıyor..."
+echo "[3/7] Dizinler oluşturuluyor ve dosyalar kopyalanıyor..."
 mkdir -p /opt/kioskpi
 cp -r kiosk /opt/kioskpi/
 cp -r config /opt/kioskpi/
@@ -35,7 +35,7 @@ cp -r plymouth /opt/kioskpi/
 chown -R root:root /opt/kioskpi
 chmod -R 755 /opt/kioskpi
 
-echo "[4/8] Geçici admin şifresi oluşturuluyor..."
+echo "[4/7] Geçici admin şifresi oluşturuluyor..."
 RANDOM_PASS=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 8)
 # We use python to hash and set the password
 python3 -c "
@@ -48,29 +48,38 @@ with open('/opt/kioskpi/admin_hash.txt', 'wb') as f:
 "
 chmod 600 /opt/kioskpi/admin_hash.txt
 
-echo "[5/8] Systemd servisleri ayarlanıyor..."
-cp systemd/kiosk-display.service /etc/systemd/system/
+echo "[5/7] Systemd servisleri ve Greetd ayarlanıyor..."
+# Chromium Debug/Kiosk başlatıcı
+cat << "EOF" > /usr/local/bin/chromium-debug.sh
+#!/bin/bash
+export XDG_RUNTIME_DIR=/run/user/$(id -u)
+/usr/bin/chromium --ozone-platform=wayland --disable-dev-shm-usage --disable-extensions --disable-component-update --disable-background-networking --disable-sync --no-first-run --kiosk --noerrdialogs --disable-infobars --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir=/home/kiosk/.config/chromium-kiosk about:blank > /tmp/chromium_real.log 2>&1
+EOF
+chmod +x /usr/local/bin/chromium-debug.sh
+
+# Greetd yapılandırması
+mkdir -p /etc/greetd
+cat << "EOF" > /etc/greetd/config.toml
+[terminal]
+vt = 7
+[default_session]
+command = "/usr/bin/labwc -S /usr/local/bin/chromium-debug.sh"
+user = "kiosk"
+EOF
+
+# Kiosk App servisi
 cp systemd/kiosk-app.service /etc/systemd/system/
 systemctl daemon-reload
-systemctl enable kiosk-display.service
+systemctl enable greetd.service
 systemctl enable kiosk-app.service
 
-echo "[6/8] TTY1 Auto-login ayarlanıyor (kiosk kullanıcısı için)..."
-mkdir -p /etc/systemd/system/getty@tty1.service.d/
-cat > /etc/systemd/system/getty@tty1.service.d/override.conf << EOF
-[Service]
-ExecStart=
-ExecStart=-/sbin/agetty --autologin kiosk --noclear %I \$TERM
-EOF
-systemctl daemon-reload
-
-echo "[7/8] GPU Hızlandırma ayarları (/boot/firmware/config.txt)..."
+echo "[6/7] GPU Hızlandırma ayarları (/boot/firmware/config.txt)..."
 # Just to ensure V3D driver is enabled (Debian Trixie standard)
 if ! grep -q "dtoverlay=vc4-kms-v3d" /boot/firmware/config.txt; then
     echo "dtoverlay=vc4-kms-v3d" >> /boot/firmware/config.txt
 fi
 
-echo "[8/8] Plymouth boot teması kuruluyor..."
+echo "[7/7] Plymouth boot teması kuruluyor..."
 mkdir -p /usr/share/plymouth/themes/kioskpi
 cp -r /opt/kioskpi/plymouth/kioskpi/* /usr/share/plymouth/themes/kioskpi/
 plymouth-set-default-theme -R kioskpi || echo "Initramfs güncellenirken uyarı, bu normal olabilir."
