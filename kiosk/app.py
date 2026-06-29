@@ -1,6 +1,11 @@
 import os
 import sys
 import threading
+import socket
+import io
+import base64
+import qrcode
+import subprocess
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from werkzeug.utils import secure_filename
 
@@ -52,6 +57,37 @@ def logout():
     session.pop('logged_in', None)
     return redirect(url_for('login'))
 
+def get_ip_address():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(('10.255.255.255', 1))
+        IP = s.getsockname()[0]
+    except Exception:
+        IP = None
+    finally:
+        s.close()
+    return IP
+
+@app.route('/setup_screen')
+def setup_screen():
+    return render_template('setup_screen.html')
+
+@app.route('/api/setup_info')
+def setup_info():
+    ip = get_ip_address()
+    if not ip:
+        return jsonify({"ip": None})
+    
+    port = config.get('admin_port', 8080)
+    url = f"http://{ip}:{port}"
+    
+    img = qrcode.make(url)
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    qr_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+    
+    return jsonify({"ip": ip, "port": port, "qr_base64": qr_base64})
+
 @app.route('/')
 def dashboard():
     all_config = config.get_all()
@@ -74,7 +110,11 @@ def save_config():
     
     # Reload primary URL immediately if we are in primary state
     if idle.current_state == 'primary' and 'primary_url' in data:
-        browser.navigate(data['primary_url'])
+        new_url = data['primary_url']
+        if new_url == 'about:blank' or new_url.strip() == '':
+            port = config.get('admin_port', 8080)
+            new_url = f"http://127.0.0.1:{port}/setup_screen"
+        browser.navigate(new_url)
         
     return jsonify({"success": True})
 
@@ -142,6 +182,96 @@ def reboot_pi():
     threading.Thread(target=restart).start()
     return jsonify({"success": True})
 
+def apply_rotation(degrees):
+    try:
+        cmd_list = "XDG_RUNTIME_DIR=/run/user/1000 WAYLAND_DISPLAY=wayland-1 wlr-randr"
+        out = subprocess.check_output(['su', 'kiosk', '-c', cmd_list], stderr=subprocess.STDOUT).decode()
+        outputs = [line.split()[0] for line in out.split('\n') if line and not line.startswith(' ')]
+        
+        for output in outputs:
+            rot_cmd = f"{cmd_list} --output {output} --transform {degrees}"
+            subprocess.run(['su', 'kiosk', '-c', rot_cmd])
+        return True
+    except Exception as e:
+        print("Rotation error:", e)
+        return False
+
+@app.route('/api/rotation', methods=['POST'])
+def set_rotation():
+    data = request.json
+    rotation = data.get('rotation', '0')
+    config.set('display_rotation', rotation)
+    apply_rotation(rotation)
+    return jsonify({"success": True})
+
+@app.route('/api/wifi/scan', methods=['GET'])
+def wifi_scan():
+    try:
+        out = subprocess.check_output(['nmcli', '-t', '-f', 'SSID,SIGNAL,SECURITY', 'dev', 'wifi']).decode()
+        networks = []
+        for line in out.split('\n'):
+            if line:
+                parts = line.split(':')
+                if len(parts) >= 3 and parts[0]:
+                    networks.append({
+                        "ssid": parts[0],
+                        "signal": parts[1],
+                        "security": parts[2]
+                    })
+        unique = {}
+        for n in networks:
+            if n['ssid'] not in unique or int(n['signal']) > int(unique[n['ssid']]['signal']):
+                unique[n['ssid']] = n
+        return jsonify({"success": True, "networks": list(unique.values())})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/api/wifi/connect', methods=['POST'])
+def wifi_connect():
+    data = request.json
+    ssid = data.get('ssid')
+    password = data.get('password', '')
+    try:
+        if password:
+            subprocess.run(['nmcli', 'dev', 'wifi', 'connect', ssid, 'password', password], check=True)
+        else:
+            subprocess.run(['nmcli', 'dev', 'wifi', 'connect', ssid], check=True)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/api/schedule_reboot', methods=['POST'])
+def schedule_reboot():
+    data = request.json
+    enabled = data.get('enabled', False)
+    time_str = data.get('time', '03:00')
+    
+    config.set('daily_reboot_enabled', enabled)
+    config.set('daily_reboot_time', time_str)
+    
+    cron_file = '/etc/cron.d/kioskpi-reboot'
+    try:
+        if enabled:
+            hour, minute = time_str.split(':')
+            cron_content = f"{minute} {hour} * * * root /sbin/reboot\n"
+            with open(cron_file, 'w') as f:
+                f.write(cron_content)
+        else:
+            if os.path.exists(cron_file):
+                os.remove(cron_file)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/api/system_update', methods=['POST'])
+def system_update():
+    def do_update():
+        import time
+        time.sleep(1)
+        os.system("curl -sSL https://raw.githubusercontent.com/memcos/KioskPi/main/setup.sh | bash")
+    threading.Thread(target=do_update).start()
+    return jsonify({"success": True})
+
 @app.route('/api/screenshot', methods=['GET'])
 def get_screenshot():
     if not browser or (not browser.connected and not browser.connect(max_retries=1, retry_delay=0.1)):
@@ -167,13 +297,22 @@ def main():
     monitor.start()
     idle.start()
     
+    # Apply saved display rotation
+    rotation = config.get('display_rotation', '0')
+    if rotation != '0':
+        apply_rotation(rotation)
+    
     # Wait for Chromium to start
     print("Waiting for Chromium CDP...")
     browser.connect(max_retries=15, retry_delay=2)
     
     if browser.connected:
         print("Loading primary URL...")
-        browser.navigate(config.get('primary_url', 'about:blank'))
+        primary = config.get('primary_url', 'about:blank')
+        if primary == 'about:blank' or primary.strip() == '':
+            port = config.get('admin_port', 8080)
+            primary = f"http://127.0.0.1:{port}/setup_screen"
+        browser.navigate(primary)
     
     # Start web server
     port = config.get('admin_port', 8080)

@@ -85,6 +85,20 @@
             
             <hr>
             
+            <h3>Ekran Döndürme</h3>
+            <div class="form-group">
+                <label>Ekran Yönü (Derece)</label>
+                <select id="display_rotation" name="display_rotation" class="custom-select">
+                    <option value="0" {% if config.display_rotation == '0' %}selected{% endif %}>Normal (0°)</option>
+                    <option value="90" {% if config.display_rotation == '90' %}selected{% endif %}>Sağa Dönük (90°)</option>
+                    <option value="180" {% if config.display_rotation == '180' %}selected{% endif %}>Ters (180°)</option>
+                    <option value="270" {% if config.display_rotation == '270' %}selected{% endif %}>Sola Dönük (270°)</option>
+                </select>
+                <button type="button" id="save-rotation" class="btn primary-btn mt-2">Döndürmeyi Uygula</button>
+            </div>
+
+            <hr>
+            
             <h3>Boot Logo</h3>
             <form id="logo-upload-form" class="upload-area mt-2">
                 <p>Yeni bir başlangıç logosu yükleyin (PNG/JPG)</p>
@@ -93,6 +107,25 @@
                 <span id="file-name" class="ml-2"></span>
                 <button type="submit" class="btn primary-btn mt-2" style="display:none" id="upload-btn">Logoyu Uygula</button>
             </form>
+        </section>
+
+        <!-- Network Settings -->
+        <section class="glass-card config-section">
+            <h3>Ağ (Wi-Fi) Ayarları</h3>
+            <p>Cihazı yerel bir Wi-Fi ağına bağlayın.</p>
+            <button type="button" id="scan-wifi" class="btn secondary-btn">Çevredeki Ağları Tara</button>
+            
+            <div id="wifi-list-container" class="mt-4" style="display:none;">
+                <div class="form-group">
+                    <label>Seçilen Ağ</label>
+                    <select id="wifi-ssid" class="custom-select"></select>
+                </div>
+                <div class="form-group">
+                    <label>Wi-Fi Şifresi</label>
+                    <input type="password" id="wifi-password" placeholder="Ağ şifresini girin (Açıksa boş bırakın)">
+                </div>
+                <button type="button" id="connect-wifi" class="btn primary-btn">Bağlan</button>
+            </div>
         </section>
 
         <!-- System & Security -->
@@ -112,6 +145,23 @@
             <div class="action-buttons mt-4">
                 <button id="reboot-app" class="btn warning-btn">Uygulamayı Yeniden Başlat</button>
                 <button id="reboot-pi" class="btn danger-btn">Cihazı Yeniden Başlat</button>
+                <button id="update-system" class="btn secondary-btn">Yazılımı Güncelle</button>
+            </div>
+            
+            <hr>
+            
+            <h3>Otomatik Yeniden Başlatma (Cron)</h3>
+            <div class="toggle-group" style="margin-bottom: 15px;">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="daily_reboot_enabled" name="daily_reboot_enabled" {% if config.daily_reboot_enabled %}checked{% endif %}>
+                    <span class="slider"></span>
+                </label>
+                <span class="toggle-label">Her Gün Otomatik Yeniden Başlat</span>
+            </div>
+            <div class="form-group" id="reboot-time-container" style="display: {% if config.daily_reboot_enabled %}block{% else %}none{% endif %};">
+                <label>Saat (SS:DD)</label>
+                <input type="time" id="daily_reboot_time" value="{{ config.daily_reboot_time }}">
+                <button type="button" id="save-reboot-schedule" class="btn primary-btn mt-2">Zamanlamayı Kaydet</button>
             </div>
             
             <button id="take-screenshot" class="btn primary-btn mt-4">Anlık Ekran Görüntüsü Al</button>

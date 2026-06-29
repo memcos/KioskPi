@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KioskPi - Kurulum</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+            background-color: #0f172a;
+        }
+        .setup-card {
+            background: rgba(30, 41, 59, 0.7);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 500px;
+            width: 100%;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+        }
+        .qr-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            display: inline-block;
+            margin: 20px 0;
+        }
+        .qr-container img {
+            display: block;
+            width: 250px;
+            height: 250px;
+        }
+        h1 { margin-top: 0; color: #f8fafc; font-size: 28px; }
+        p { color: #cbd5e1; font-size: 18px; margin-bottom: 5px; }
+        .ip-address {
+            font-size: 24px;
+            font-weight: 600;
+            color: #38bdf8;
+            margin-bottom: 20px;
+        }
+        .warning {
+            color: #f43f5e;
+            font-weight: 500;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(244, 63, 94, 0.1);
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="background-animation"></div>
+    <div class="setup-card">
+        <h1>KioskPi'ye Hoşgeldiniz</h1>
+        <p>Lütfen yönetim paneline bağlanın:</p>
+        
+        <div id="ip-container">
+            <div class="ip-address" id="ip-text">Yükleniyor...</div>
+            <div class="qr-container">
+                <img id="qr-image" src="" alt="QR Kod">
+            </div>
+        </div>
+
+        <div id="no-network-warning" class="warning" style="display: none;">
+            İnternet/Ağ bağlantısı veya IP adresi bulunamadı. Lütfen cihazı ağa bağlayın.
+        </div>
+        
+        <p style="font-size: 14px; margin-top: 20px;">Ayarlar panelinden Birincil URL belirlendiğinde bu ekran otomatik kapanacaktır.</p>
+    </div>
+
+    <script>
+        function updateSetupInfo() {
+            fetch('/api/setup_info')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.ip) {
+                        document.getElementById('ip-text').innerText = `http://${data.ip}:${data.port}`;
+                        document.getElementById('qr-image').src = `data:image/png;base64,${data.qr_base64}`;
+                        document.getElementById('no-network-warning').style.display = 'none';
+                        document.getElementById('ip-container').style.display = 'block';
+                    } else {
+                        document.getElementById('no-network-warning').style.display = 'block';
+                        document.getElementById('ip-container').style.display = 'none';
+                    }
+                })
+                .catch(e => console.error("Update failed", e));
+        }
+
+        updateSetupInfo();
+        setInterval(updateSetupInfo, 5000);
+    </script>
+</body>
+</html>

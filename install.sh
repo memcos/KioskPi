@@ -16,8 +16,8 @@ IP_ADDR=$(hostname -I | awk '{print $1}')
 echo "[1/7] Sistem paketleri güncelleniyor ve kuruluyor..."
 apt-get update
 apt-get install -y greetd labwc chromium-browser python3-flask python3-bcrypt \
-    python3-evdev python3-websocket python3-requests \
-    plymouth plymouth-themes
+    python3-evdev python3-websocket python3-requests python3-qrcode \
+    network-manager wlr-randr plymouth plymouth-themes
 
 echo "[2/8] Kiosk kullanıcısı oluşturuluyor..."
 if id "kiosk" &>/dev/null; then

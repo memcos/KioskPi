@@ -232,6 +232,125 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Handle Display Rotation
+    const saveRotationBtn = document.getElementById('save-rotation');
+    if (saveRotationBtn) {
+        saveRotationBtn.addEventListener('click', async () => {
+            const rotation = document.getElementById('display_rotation').value;
+            const originalText = saveRotationBtn.textContent;
+            saveRotationBtn.textContent = 'Bekleyin...';
+            try {
+                const res = await fetch('/api/rotation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rotation })
+                });
+                const result = await res.json();
+                if (result.success) showToast('Ekran döndürme uygulandı');
+                else showToast('Hata oluştu', 'error');
+            } catch(e) { showToast('Bağlantı hatası', 'error'); }
+            saveRotationBtn.textContent = originalText;
+        });
+    }
+
+    // Handle Network Settings
+    const scanWifiBtn = document.getElementById('scan-wifi');
+    const wifiContainer = document.getElementById('wifi-list-container');
+    const connectWifiBtn = document.getElementById('connect-wifi');
+    const wifiSelect = document.getElementById('wifi-ssid');
+    
+    if (scanWifiBtn) {
+        scanWifiBtn.addEventListener('click', async () => {
+            scanWifiBtn.textContent = 'Taranıyor...';
+            scanWifiBtn.disabled = true;
+            try {
+                const res = await fetch('/api/wifi/scan');
+                const result = await res.json();
+                if (result.success) {
+                    wifiSelect.innerHTML = '';
+                    result.networks.forEach(n => {
+                        const opt = document.createElement('option');
+                        opt.value = n.ssid;
+                        let sec = n.security ? (n.security !== '--' ? ' (Şifreli)' : ' (Açık)') : '';
+                        opt.textContent = `${n.ssid} - ${n.signal}%${sec}`;
+                        wifiSelect.appendChild(opt);
+                    });
+                    wifiContainer.style.display = 'block';
+                    showToast(`${result.networks.length} ağ bulundu`);
+                } else showToast('Ağlar taranamadı', 'error');
+            } catch(e) { showToast('Bağlantı hatası', 'error'); }
+            scanWifiBtn.textContent = 'Çevredeki Ağları Tara';
+            scanWifiBtn.disabled = false;
+        });
+    }
+
+    if (connectWifiBtn) {
+        connectWifiBtn.addEventListener('click', async () => {
+            const ssid = wifiSelect.value;
+            const password = document.getElementById('wifi-password').value;
+            if (!ssid) return;
+            
+            connectWifiBtn.textContent = 'Bağlanıyor...';
+            connectWifiBtn.disabled = true;
+            try {
+                const res = await fetch('/api/wifi/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ssid, password })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast('Bağlantı başarılı. IP adresiniz değişmiş olabilir.', 'success');
+                    document.getElementById('wifi-password').value = '';
+                } else showToast(result.error || 'Bağlantı başarısız', 'error');
+            } catch(e) { showToast('Bağlantı koptuysa IP değişmiş olabilir, sayfayı yenileyin.', 'error'); }
+            connectWifiBtn.textContent = 'Bağlan';
+            connectWifiBtn.disabled = false;
+        });
+    }
+
+    // Handle System Update
+    const updateSystemBtn = document.getElementById('update-system');
+    if (updateSystemBtn) {
+        updateSystemBtn.addEventListener('click', async () => {
+            if (confirm('Sistemi GitHub üzerinden güncelleyip cihazı yeniden başlatmak istediğinize emin misiniz?')) {
+                try {
+                    await fetch('/api/system_update', { method: 'POST' });
+                    showToast('Güncelleme başlatıldı. Cihaz kapanıp açılacak...');
+                } catch(e) {}
+            }
+        });
+    }
+
+    // Handle Cron Settings
+    const cronToggle = document.getElementById('daily_reboot_enabled');
+    const cronTimeContainer = document.getElementById('reboot-time-container');
+    const saveCronBtn = document.getElementById('save-reboot-schedule');
+    
+    if (cronToggle) {
+        cronToggle.addEventListener('change', function() {
+            cronTimeContainer.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+
+    if (saveCronBtn) {
+        saveCronBtn.addEventListener('click', async () => {
+            const enabled = cronToggle.checked;
+            const timeStr = document.getElementById('daily_reboot_time').value;
+            
+            try {
+                const res = await fetch('/api/schedule_reboot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled, time: timeStr })
+                });
+                const result = await res.json();
+                if (result.success) showToast('Zamanlama kaydedildi');
+                else showToast('Hata oluştu', 'error');
+            } catch(e) { showToast('Bağlantı hatası', 'error'); }
+        });
+    }
+
     // Polling for Status Updates
     if (document.getElementById('active-screen')) {
         setInterval(async () => {
