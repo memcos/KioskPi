@@ -99,8 +99,20 @@
 
             <hr>
             
-            <h3>Boot Logo</h3>
-            <form id="logo-upload-form" class="upload-area mt-2">
+            <h3>Boot Logo ve Açılış Ekranı</h3>
+            
+            <div class="form-group mt-2">
+                <label>Açılış Ekranı Stili</label>
+                <select id="boot_mode" name="boot_mode" class="custom-select">
+                    <option value="image_only" {% if config.boot_mode == 'image_only' %}selected{% endif %}>Sadece Resim Göster</option>
+                    <option value="image_and_log" {% if config.boot_mode == 'image_and_log' %}selected{% endif %}>Resim ve İşlem Durumu (Log)</option>
+                    <option value="text_only" {% if config.boot_mode == 'text_only' %}selected{% endif %}>Sadece İşlem Durumu (Resimsiz Metin)</option>
+                </select>
+                <button type="button" id="save-bootmode" class="btn primary-btn mt-2">Stili Uygula</button>
+                <small style="display:block; margin-top:5px; color:#f59e0b;">Uyarı: Stili uygulamak (initramfs güncellemesi) ekranı kısa bir süreliğine kapatabilir ve işlem yaklaşık 10-15 saniye sürer.</small>
+            </div>
+
+            <form id="logo-upload-form" class="upload-area mt-4">
                 <p>Yeni bir başlangıç logosu yükleyin (PNG/JPG)</p>
                 <input type="file" id="boot_logo" accept="image/png, image/jpeg" style="display:none">
                 <button type="button" class="btn secondary-btn" onclick="document.getElementById('boot_logo').click()">Logo Seç</button>

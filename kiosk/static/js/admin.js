@@ -121,6 +121,30 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Handle Boot Mode
+    const saveBootmodeBtn = document.getElementById('save-bootmode');
+    if (saveBootmodeBtn) {
+        saveBootmodeBtn.addEventListener('click', async () => {
+            const mode = document.getElementById('boot_mode').value;
+            const originalText = saveBootmodeBtn.textContent;
+            saveBootmodeBtn.textContent = 'İşleniyor (Lütfen bekleyin)...';
+            saveBootmodeBtn.disabled = true;
+            try {
+                const res = await fetch('/api/bootmode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode })
+                });
+                const result = await res.json();
+                if (result.success) showToast('Açılış ekranı stili uygulandı');
+                else showToast('Hata oluştu', 'error');
+            } catch(e) { showToast('Bağlantı hatası', 'error'); }
+            
+            saveBootmodeBtn.textContent = originalText;
+            saveBootmodeBtn.disabled = false;
+        });
+    }
+
     // Handle Password Change
     const passForm = document.getElementById('password-form');
     if (passForm) {

@@ -12,5 +12,6 @@
   "input_devices": [],
   "display_rotation": "0",
   "daily_reboot_enabled": false,
-  "daily_reboot_time": "03:00"
+  "daily_reboot_time": "03:00",
+  "boot_mode": "image_only"
 }

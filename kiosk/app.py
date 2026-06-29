@@ -159,6 +159,19 @@ def upload_bootlogo():
             
     return jsonify({"success": False, "error": "Geçersiz dosya türü"}), 400
 
+@app.route('/api/bootmode', methods=['POST'])
+def set_bootmode():
+    data = request.json
+    mode = data.get('mode', 'image_only')
+    config.set('boot_mode', mode)
+    
+    # We run apply_boot_mode in a background thread because it takes 15-20s and restarts the display
+    def apply():
+        boot_logo.apply_boot_mode(mode)
+        
+    threading.Thread(target=apply).start()
+    return jsonify({"success": True})
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg'}
 

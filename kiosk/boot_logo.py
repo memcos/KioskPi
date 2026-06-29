@@ -35,3 +35,71 @@ def apply_logo(image_path):
     except Exception as e:
         print(f"Unexpected error: {e}")
         return False
+
+def apply_boot_mode(mode):
+    script_path = "/usr/share/plymouth/themes/kioskpi/kioskpi.script"
+    
+    script_image_only = """
+Window.SetBackgroundTopColor (0, 0, 0);
+Window.SetBackgroundBottomColor (0, 0, 0);
+logo_image = Image("logo.png");
+screen_width = Window.GetWidth();
+screen_height = Window.GetHeight();
+logo_width = logo_image.GetWidth();
+logo_height = logo_image.GetHeight();
+x = (screen_width - logo_width) / 2;
+y = (screen_height - logo_height) / 2;
+logo_sprite = Sprite(logo_image);
+logo_sprite.SetPosition(x, y, 0);
+"""
+
+    script_image_and_log = script_image_only + """
+message_sprite = Sprite();
+fun message_callback (text) {
+  my_image = Image.Text(text, 1, 1, 1);
+  message_sprite.SetImage(my_image);
+  message_sprite.SetPosition((Window.GetWidth() - my_image.GetWidth()) / 2, y + logo_height + 40, 10000);
+}
+Plymouth.SetUpdateStatusFunction (message_callback);
+"""
+
+    script_text_only = """
+Window.SetBackgroundTopColor (0, 0, 0);
+Window.SetBackgroundBottomColor (0, 0, 0);
+message_sprite = Sprite();
+fun message_callback (text) {
+  my_image = Image.Text(text, 1, 1, 1);
+  message_sprite.SetImage(my_image);
+  message_sprite.SetPosition((Window.GetWidth() - my_image.GetWidth()) / 2, (Window.GetHeight() - my_image.GetHeight()) / 2, 10000);
+}
+Plymouth.SetUpdateStatusFunction (message_callback);
+"""
+
+    if mode == "text_only":
+        content = script_text_only
+    elif mode == "image_and_log":
+        content = script_image_and_log
+    else:
+        content = script_image_only
+
+    try:
+        if not os.path.exists("/usr/share/plymouth/themes/kioskpi"):
+            return False
+            
+        with open(script_path, "w") as f:
+            f.write(content)
+        
+        # Stop display to save RAM during initramfs rebuild
+        subprocess.run(["systemctl", "stop", "greetd"], check=False)
+        
+        # Rebuild initramfs
+        subprocess.run(["plymouth-set-default-theme", "-R", "kioskpi"], check=True)
+        
+        # Restart display
+        subprocess.run(["systemctl", "start", "greetd"], check=False)
+        
+        return True
+    except Exception as e:
+        print(f"Error applying boot mode: {e}")
+        subprocess.run(["systemctl", "start", "greetd"], check=False)
+        return False
