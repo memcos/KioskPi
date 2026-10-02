@@ -15,7 +15,14 @@ IP_ADDR=$(hostname -I | awk '{print $1}')
 
 echo "[1/7] Sistem paketleri güncelleniyor ve kuruluyor..."
 apt-get update
-apt-get install -y greetd labwc chromium-browser python3-flask python3-bcrypt \
+
+# Debian Trixie (13) için 'chromium', eski sürümler için 'chromium-browser'
+CHROMIUM_PKG="chromium"
+if ! apt-cache show chromium &>/dev/null; then
+    CHROMIUM_PKG="chromium-browser"
+fi
+
+apt-get install -y greetd labwc $CHROMIUM_PKG dbus-user-session python3-flask python3-bcrypt \
     python3-evdev python3-websocket python3-requests python3-qrcode \
     network-manager wlr-randr plymouth plymouth-themes
 
@@ -55,29 +62,79 @@ with open('/opt/kioskpi/admin_hash.txt', 'wb') as f:
 fi
 
 echo "[5/7] Systemd servisleri ve Greetd ayarlanıyor..."
-# Chromium Debug/Kiosk başlatıcı
+# Debian 13 Trixie AppArmor unprivileged user namespace ayarı (Chromium sandbox için)
+if [ -f /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+    sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+    echo "kernel.apparmor_restrict_unprivileged_userns=0" > /etc/sysctl.d/60-apparmor-namespace.conf
+fi
+
+# Chromium başlatıcı scripti
 cat << "EOF" > /usr/local/bin/chromium-debug.sh
 #!/bin/bash
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
-/usr/bin/chromium --ozone-platform=wayland --disable-dev-shm-usage --disable-extensions --disable-component-update --disable-background-networking --disable-sync --no-first-run --kiosk --noerrdialogs --disable-infobars --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir=/home/kiosk/.config/chromium-kiosk about:blank > /tmp/chromium_real.log 2>&1
+if [ ! -d "$XDG_RUNTIME_DIR" ]; then
+    export XDG_RUNTIME_DIR=/tmp/kiosk-runtime-$(id -u)
+fi
+
+CHROMIUM_BIN=$(which chromium || which chromium-browser || echo "/usr/bin/chromium")
+
+exec "$CHROMIUM_BIN" \
+    --ozone-platform=wayland \
+    --enable-features=UseOzonePlatform \
+    --disable-dev-shm-usage \
+    --disable-extensions \
+    --disable-component-update \
+    --disable-background-networking \
+    --disable-sync \
+    --no-first-run \
+    --kiosk \
+    --noerrdialogs \
+    --disable-infobars \
+    --remote-debugging-port=9222 \
+    --remote-allow-origins=* \
+    --user-data-dir=/home/kiosk/.config/chromium-kiosk \
+    about:blank > /tmp/chromium_real.log 2>&1
 EOF
 chmod +x /usr/local/bin/chromium-debug.sh
 
-# Greetd yapılandırması
+# Labwc Oturum Başlatıcı (XDG_RUNTIME_DIR ve dbus-run-session garantisi ile)
+cat << "EOF" > /usr/local/bin/kiosk-session.sh
+#!/bin/bash
+export XDG_RUNTIME_DIR=/run/user/$(id -u)
+if [ ! -d "$XDG_RUNTIME_DIR" ]; then
+    export XDG_RUNTIME_DIR=/tmp/kiosk-runtime-$(id -u)
+    mkdir -p "$XDG_RUNTIME_DIR"
+    chmod 700 "$XDG_RUNTIME_DIR"
+fi
+
+export WLR_NO_HARDWARE_CURSORS=1
+
+exec dbus-run-session /usr/bin/labwc -S /usr/local/bin/chromium-debug.sh > /tmp/labwc.log 2>&1
+EOF
+chmod +x /usr/local/bin/kiosk-session.sh
+
+# Kiosk ev dizini izinlerini düzelt
+chown -R kiosk:kiosk /home/kiosk 2>/dev/null || true
+
+# Greetd yapılandırması (TTY1 üzerinde autologin)
 mkdir -p /etc/greetd
 cat << "EOF" > /etc/greetd/config.toml
 [terminal]
-vt = 7
+vt = 1
 [default_session]
-command = "/usr/bin/labwc -S /usr/local/bin/chromium-debug.sh"
+command = "/usr/local/bin/kiosk-session.sh"
 user = "kiosk"
 EOF
+
+# TTY1 getty çakışmasını engelle
+systemctl disable getty@tty1.service 2>/dev/null || true
 
 # Kiosk App servisi
 cp systemd/kiosk-app.service /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable greetd.service
 systemctl enable kiosk-app.service
+systemctl restart greetd.service || true
 systemctl restart kiosk-app.service || true
 
 echo "[6/7] GPU Hızlandırma ayarları (/boot/firmware/config.txt)..."
