@@ -126,8 +126,26 @@ command = "/usr/local/bin/kiosk-session.sh"
 user = "kiosk"
 EOF
 
-# TTY1 getty çakışmasını engelle
-systemctl disable getty@tty1.service 2>/dev/null || true
+# TTY1 getty çakışmasını engelle ve maskele
+systemctl mask getty@tty1.service 2>/dev/null || true
+
+# Cloud-init'in her açılışta TTY1'i meşgul etmesini engelle
+touch /etc/cloud/cloud-init.disabled 2>/dev/null || true
+
+# Greetd açılış garantisi ve Plymouth geçiş ayarları
+mkdir -p /etc/systemd/system/greetd.service.d
+cat << "EOF" > /etc/systemd/system/greetd.service.d/override.conf
+[Unit]
+Conflicts=getty@tty1.service
+After=systemd-user-sessions.service plymouth-quit.service
+Wants=plymouth-quit.service
+
+[Install]
+WantedBy=graphical.target multi-user.target
+EOF
+
+# Sistem açılış hedefini graphical.target yap (Lite sistemlerde zorunludur)
+systemctl set-default graphical.target
 
 # Kiosk App servisi
 cp systemd/kiosk-app.service /etc/systemd/system/
