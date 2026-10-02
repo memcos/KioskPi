@@ -1,6 +1,6 @@
 [Unit]
 Description=KioskPi Backend Application
-After=network.target kiosk-display.service
+After=network.target greetd.service
 
 [Service]
 Type=simple
@@ -14,3 +14,4 @@ RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
+
